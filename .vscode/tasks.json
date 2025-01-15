@@ -10,12 +10,8 @@
             "windows": {
                 "command": "mingw32-make.exe",
                 "args": [
-                    "SHELL=cmd"
-                ],
-            },
-            "osx": {
-                "args": [
-                    "config=debug_arm64"
+                    "SHELL=cmd",
+                    "-j"
                 ],
             },
             "group": {
@@ -35,17 +31,8 @@
                 "command": "mingw32-make.exe",
                 "args": [
                     "SHELL=cmd",
-                    "config=release_x64"
-                ],
-            },
-            "linux": {
-                "args": [
-                    "config=release_x64"
-                ],
-            },
-            "osx": {
-                "args": [
-                    "config=release_arm64"
+                    "config=release_x64",
+                    "-j"
                 ],
             },
             "group": "build",
@@ -62,16 +49,6 @@
                 "command": "mingw32-make.exe",
                 "args": [
                     "SHELL=cmd",
-                    "clean"
-                ],
-            },
-            "linux": {
-                "args": [
-                    "clean"
-                ],
-            },
-            "osx": {
-                "args": [
                     "clean"
                 ],
             },
@@ -93,12 +70,6 @@
             ],
             "windows": {
                 "command": "./premake5.exe"
-            },
-            "linux": {
-                "command": "./premake5"
-            },
-            "osx": {
-                "command": "premake5.osx"
             },
             "group": "build"
         }

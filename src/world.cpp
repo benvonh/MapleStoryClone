@@ -1,66 +1,68 @@
 #include "world.hpp"
+#include "raylib.h"
+#include <fstream>
+#include <sstream>
+#include <stdexcept>
 
-World::World()
-  : music(LoadMusicStream("AboveTheTreetops.mp3")),
-    platform(LoadTexture("lith_harbor.png")),
-    background{},
-    player(std::make_unique<Player>())
-{
-  if (!IsMusicValid(this->music))
-    throw std::runtime_error("Music stream is not valid!");
-
-  if (!IsTextureValid(this->platform))
-    throw std::runtime_error("Platform texture is not valid!");
-
-  // Image map = LoadImage("lith_harbor.png");
-  // ImageResizeNN(&map, 1366, 768);
-  // this->platform = LoadTextureFromImage(map);
-  // UnloadImage(map);
-  this->LoadBackground();
+World::World() {
+  if (!IsTextureValid(M__platform))
+    throw std::runtime_error("Platform texture is invalid!");
 }
 
-World::~World()
-{
-  UnloadMusicStream(this->music);
-  UnloadTexture(this->platform);
-  UnloadTexture(this->background);
-}
+World::~World() { UnloadTexture(M__platform); }
 
-void World::Create()
-{
-  PlayMusicStream(this->music);
-  player->SetWorld(shared_from_this());
-}
+void World::Create() {
+  M_player->world = shared_from_this();
 
-void World::Update()
-{
-  UpdateMusicStream(this->music);
-  player->Update();
-
-  if (IsWindowResized()) {
-    this->LoadBackground();
+  for (auto &m : M_monsters) {
+    m.world = shared_from_this();
   }
 }
 
-void World::Render()
-{
-  DrawTexture(this->background, 0, 0, WHITE);
-  DrawTexture(this->platform, 0, 0, WHITE);
-  player->Render();
+void World::Update() {
+  M_player->Update();
+
+  M_camera.target.x = std::max(M_player->GetPosition().x,
+                               static_cast<float>(GetScreenWidth()) / 2.f);
+
+  M_camera.target.x =
+      std::min(M_player->GetPosition().x,
+               4690.f - static_cast<float>(GetScreenWidth()) / 2.f);
+
+  M_camera.target.y =
+      std::min(M_player->GetPosition().y,
+               1590.f - static_cast<float>(GetScreenHeight()) / 2.f);
+
+  if (IsWindowResized()) {
+    M_camera.offset.x = static_cast<float>(GetScreenWidth()) / 2;
+    M_camera.offset.y = static_cast<float>(GetScreenHeight()) / 2;
+  }
 }
 
-void World::LoadBackground()
-{
-  Image image = LoadImage("background.png");
+void World::Render() {
+  BeginMode2D(M_camera);
+  DrawTexture(M__platform, 0, 0, WHITE);
+  M_player->Render();
+  EndMode2D();
+}
 
-  if (!IsImageValid(image))
-    throw std::runtime_error("Background image is not valid!");
+std::vector<Vector2> World::load_colliders() {
+  std::ifstream file("lith_harbor_colliders.txt");
 
-  ImageResizeNN(&image, GetScreenWidth(), GetScreenHeight());
-  this->background = LoadTextureFromImage(image);
+  std::string line;
+  std::vector<Vector2> colliders;
 
-  if (!IsTextureValid(this->background))
-    throw std::runtime_error("Background texture is not valid!");
+  while (std::getline(file, line)) {
+    std::stringstream stream(line);
 
-  UnloadImage(image);
+    char comma;
+    float x, y;
+
+    if (stream >> x >> comma >> y) {
+      colliders.emplace_back(x, y);
+    } else {
+      throw std::runtime_error("Invalid collider file format!");
+    }
+  }
+  return colliders;
 }

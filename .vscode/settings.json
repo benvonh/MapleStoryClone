@@ -9,20 +9,5 @@
 		"**/*.exe": true,
 	},
 	"makefile.configureOnOpen": true,
-	"editor.tabSize": 2,
-	"files.associations": {
-		"string_view": "cpp",
-		"format": "cpp",
-		"stdexcept": "cpp",
-		"memory": "cpp",
-		"utility": "cpp",
-		"xutility": "cpp",
-		"*.rh": "cpp",
-		"compare": "cpp",
-		"type_traits": "cpp",
-		"xmemory": "cpp",
-		"*.m": "cpp",
-		"string": "cpp",
-		"cstdlib": "cpp"
-	}
+	"editor.tabSize": 2
 }

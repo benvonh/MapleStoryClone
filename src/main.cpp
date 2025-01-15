@@ -1,8 +1,7 @@
 #include "game.hpp"
 #include "resources.h"
 
-int main()
-{
+int main() {
   SearchAndSetResourceDir("resources");
 
   Game<1366, 768> game("MapleStory Clone");

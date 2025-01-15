@@ -1,72 +1,63 @@
 #include "entity.hpp"
+#include "config.hpp"
+#include "raylib.h"
+#include "raymath.h"
+#include "world.hpp"
 
-Entity::Entity(const std::string &who, const std::string &texture)
-  : name(who), speed(0.f), world{}, M_position{}, M_velocity{},
-    M_texture(LoadTexture(texture.c_str()))
-{
-}
-
-Entity::~Entity()
-{
-  UnloadTexture(M_texture);
-}
-
-Vector2 Entity::GetPosition() const
-{
-  return M_position;
-}
-
-Vector2 Entity::GetVelocity() const
-{
-  return M_velocity;
-}
-
-void Entity::SetWorld(const std::shared_ptr<World> &ptr)
-{
-  world = ptr;
-}
-
-void Entity::Move(Direction direction)
-{
-  switch (direction) {
-  case Direction::UP:
-    M_velocity.y = -speed;
-    break;
-  case Direction::DOWN:
-    M_velocity.y = +speed;
-    break;
-  case Direction::LEFT:
-    M_velocity.x = -speed;
-    break;
-  case Direction::RIGHT:
-    M_velocity.x = +speed;
-    break;
+void Entity::Update() {
+  if (IsKeyPressed(KEY_R)) {
+    M_position = Vector2Zero();
   }
-}
-
-void Entity::Update()
-{
+  if (M_ground) {
+    M_velocity.x = 0.f;
+  }
   OnUpdate();
 
-  M_position.x += M_velocity.x * GetFrameTime();
-  M_position.y += M_velocity.y * GetFrameTime();
+  const Vector2 dist = Vector2Scale(M_velocity, GetFrameTime());
 
-  // if (M_velocity.x > 0) {
-  //   M_velocity.x = std::max(0.f, M_velocity.x - speed / 2);
-  // } else if (M_velocity.x < 0) {
-  //   M_velocity.x = std::min(0.f, M_velocity.x + speed / 2);
-  // }
-  M_velocity.x = 0.f;
+  Vector2 newPos = Vector2Add(M_position, dist);
 
-  if (M_velocity.y < 1000.f) {
-    M_velocity.y += 1000.f * GetFrameTime();
+  if (const auto &w = this->world.lock()) {
+    M_ground = false;
+    Vector2 collisionPoint;
+
+    const Vector2 left{.x = newPos.x - this->width / 2, .y = newPos.y};
+    const Vector2 right{.x = newPos.x + this->width / 2, .y = newPos.y};
+    // Collision due to wall
+    for (size_t i = 1ull; i < w->M_colliders.size(); i++) {
+      if (CheckCollisionLines(w->M_colliders[i], w->M_colliders[i - 1], left,
+                              right, &collisionPoint)) {
+        newPos.x = w->M_colliders[i].x;
+        break;
+      }
+    }
+    const Vector2 top{.x = newPos.x, .y = newPos.y - this->height};
+    // Collision due to gravity
+    for (size_t i = 1ull; i < w->M_colliders.size(); i++) {
+      if (CheckCollisionLines(w->M_colliders[i], w->M_colliders[i - 1], newPos,
+                              top, &collisionPoint)) {
+        newPos.y = w->M_colliders[i].y;
+        M_ground = true;
+        break;
+      }
+    }
   } else {
-    M_velocity.y = 1000.f;
+    throw std::runtime_error("World was not set!");
+  }
+
+  M_position = newPos;
+
+  if (M_velocity.y < cfg::TERMINAL) {
+    M_velocity.y += cfg::GRAVITY * GetFrameTime();
+  } else {
+    M_velocity.y = cfg::TERMINAL;
+  }
+
+  if (M_velocity.x != 0.f) {
+    M_state = State::MOVE;
+  } else {
+    M_state = State::STAND;
   }
 }
 
-void Entity::Render()
-{
-  OnRender();
-  DrawTexture(M_texture, M_position.x, M_position.y, WHITE);
-}
+void Entity::Render() { OnRender(); }
